@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Your Moving Companion</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <script type='text/javascript' src="knockout/dist/knockout.js"></script>
+    </br>
+    <div id="location"></div>
+    </br>
+    <input type="text" id="filter" placeholder="Filter Place" data-bind="textInput: item_to_be_filtered">
+
+    <ul id="ul" class="collection" data-bind="foreach: filtered_items">
+        <li id="li" class="collection-item" data-bind="visible: true, text: name, click: $root.showPlaceInfo"></li>
+    </ul>
+
+    <hr>
+
+    <div id="map">
+    </div>
+
+
+    <script>
+        var map;
+        var address;
+        var geocodedAddress;
+        var geocoder;
+        var map_lat_lng;
+        var service;
+        var placesArray;
+        var item_to_be_filtered;
+        var filtered_items;
+        var final_result;
+        var returnedPlaces;
+        var markerList = [];
+        var viewModel;
+        var result_filtered;
+        var filterItem;
+        var markerInfoToBeShown;
+        var markerInfoWindow;
+        var address;
+        var yelp_review_for_business;
+
+        var ViewModel = function() {
+            placesArray = ko.observableArray();
+            item_to_be_filtered = ko.observable('');
+            this.filtered_items = ko.computed(function() {
+                var filterItem = item_to_be_filtered().toLowerCase();
+                return result_filtered = ko.utils.arrayFilter(placesArray(), function(place) {
+                    var title = place.name.toLowerCase()
+                    var match = title.indexOf(filterItem) > -1;
+                    for (var i = 0; i < placesArray().length; i++) {
+                        for (var j = 0; j < result_filtered.length; j++) {
+                            if (placesArray()[i] != result_filtered[j]) {
+                                markerList[i].setVisible(false);
+                            } else {
+                                markerList[i].setVisible(true);
+                            }
+                        }
+                    }
+                    return match;
+                });
+
+            }, this);
+
+            //event handler for list item click.
+            this.showPlaceInfo = function(place) {
+                getYelpReviewsAndPopulateInfo(place, address)
+            };
+        }
+
+        function getYelpReviewsAndPopulateInfo(place) {
+            var business_review = "";
+            getYelpReviewsFromYelp(place, address).done(function(result) {
+                var businesses_for_place = result.businesses;
+                businesses_for_place.forEach(function(business) {
+
+                    if (business.name == place.name) {
+                        business_review = business.snippet_text;
+                    }
+
+                });
+
+                if (business_review == "") {
+                    business_review = businesses_for_place[0].snippet_text;
+                }
+
+                //show the appropraite review in info window for the place clicked in list view
+                for (var i = 0; i < placesArray().length; i++) {
+                    if (placesArray()[i].name == place.name) {
+                        showInfo(markerList[i], place.name + ' - ' + business_review);
+                    }
+                }
+
+            });
+
+        }
+
+
+        function initMap() {
+            address = 'Kitsilano';
+            $("#location").append("Lodgings in" + " " + address);
+            map_lat_lng = new google.maps.LatLng(-34.397, 150.644);
+            geocoder = new google.maps.Geocoder();
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: map_lat_lng,
+                zoom: 8
+            });
+
+            //geocode kistilano, vancouver. Once geocoded, the callback finds hotels in nearby radius by sending aysnc request to placesService
+
+            geocodedAddress = geocodeAddress(address, geocoder, map, function(error, res) {
+                geocodedAddress = res
+                var request = {
+                    location: res,
+                    radius: '50000',
+                    types: ['food']
+                };
+                service = new google.maps.places.PlacesService(map);
+                service.nearbySearch(request, callback)
+
+            });
+
+            viewModel = new ViewModel();
+            ko.applyBindings(viewModel);
+        }
+
+        function determinePlaceForMarker(marker) {
+            //determine corresponding place in returnedPlaces array for a given marker(Uses concept of parallel arrays)
+            for (var i = 0; i < markerList.length; i++) {
+                if (marker == markerList[i]) {
+                    return returnedPlaces[i]
+                }
+            }
+        }
+
+        function showInfo(marker, content) {
+            var InfoWindow = new google.maps.InfoWindow({
+                content: content
+            });
+            InfoWindow.open(map, marker);
+
+        }
+
+        function callback(results, status) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
+                placesArray(results);
+                returnedPlaces = results;
+                for (var i = 0; i < results.length; i++) {
+                    addMarker(results[i]);
+                }
+
+                markerList.forEach(function(marker) {
+
+
+                    marker.addListener('click', function() {
+                        marker.setIcon('https://www.google.com/mapfiles/marker_green.png');
+                        toggleBounce(marker);
+                        var markerLocation = determinePlaceForMarker(marker);
+                        getYelpReviewsAndPopulateInfo(markerLocation);
+                    });
+
+                });
+            }
+        }
+
+        function addMarker(place) {
+            var marker = new google.maps.Marker({
+                map: map,
+                animation: google.maps.Animation.DROP,
+                position: place.geometry.location
+            });
+            markerList.push(marker);
+        }
+
+        function toggleBounce(marker) {
+            if (marker.getAnimation() !== null) {
+                marker.setAnimation(null);
+            } else {
+                marker.setAnimation(google.maps.Animation.BOUNCE);
+            }
+        }
+
+        function geocodeAddress(address, geocoder, resultsMap, callback) {
+            //call geocode function on provided address
+            /*Once the address is geocoded and lat and long are obtained,
+            callback executes to  place a marker on the geocoded address(uses lat and long to place the marker)*/
+            //callback function then executes to find places for the geocoded location (using lat and long of geocoded address) in nearby radius
+            geocoder.geocode({
+                'address': address
+            }, function(results, status) {
+                var latlng
+                if (status === 'OK') {
+                    latlng = results[0].geometry.location
+                    resultsMap.setCenter(latlng);
+                    var marker = new google.maps.Marker({
+                        map: resultsMap,
+                        position: latlng
+                    });
+                    callback(null, latlng)
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        }
+    </script>
+    <script src="js/libs/jquery.min.js"></script>
+    <script src="js/libs/oauth-signature.js"></script>
+    <script src="js/libs/oauth-signature.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMz-JMZ-DxEXfOS8_f1nenbjSSs9Nop_U&v=3&libraries=places&callback=initMap" async defer>
+    </script>
+    <script src="js/script.js"></script>
+
+</body>
+
+</html>
