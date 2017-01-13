@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Your Moving Companion</title>
+     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Places to eat and stay in Kitsilano</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -92,6 +93,7 @@
                 //show the appropraite review in info window for the place clicked in list view
                 for (var i = 0; i < placesArray().length; i++) {
                     if (placesArray()[i].name == place.name) {
+                        animateMarker(markerList[i]);
                         showInfo(markerList[i], place.name + ' - ' + business_review);
                     }
                 }
@@ -102,11 +104,13 @@
 
 
         function initMap() {
+           // console.log("status received is" + res)
             address = 'Kitsilano';
             $("#location").append("Lodgings in" + " " + address);
             map_lat_lng = new google.maps.LatLng(-34.397, 150.644);
             geocoder = new google.maps.Geocoder();
             map = new google.maps.Map(document.getElementById('map'), {
+
                 center: map_lat_lng,
                 zoom: 8
             });
@@ -158,14 +162,17 @@
 
 
                     marker.addListener('click', function() {
-                        marker.setIcon('https://www.google.com/mapfiles/marker_green.png');
-                        toggleBounce(marker);
                         var markerLocation = determinePlaceForMarker(marker);
                         getYelpReviewsAndPopulateInfo(markerLocation);
                     });
 
                 });
             }
+        }
+
+        function animateMarker(marker){
+             marker.setIcon('https://www.google.com/mapfiles/marker_green.png');
+                        toggleBounce(marker);
         }
 
         function addMarker(place) {
@@ -183,6 +190,10 @@
             } else {
                 marker.setAnimation(google.maps.Animation.BOUNCE);
             }
+        }
+
+        function mapserrorhandler(){
+          alert("An error has occurred while using Google maps")
         }
 
         function geocodeAddress(address, geocoder, resultsMap, callback) {
@@ -211,9 +222,10 @@
     <script src="js/libs/jquery.min.js"></script>
     <script src="js/libs/oauth-signature.js"></script>
     <script src="js/libs/oauth-signature.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMz-JMZ-DxEXfOS8_f1nenbjSSs9Nop_U&v=3&libraries=places&callback=initMap" async defer>
-    </script>
     <script src="js/script.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMz-JMZ-DxEXfOS8_f1nenbjSSs9Nop_U&v=3&libraries=places&callback=initMap" onerror= "mapserrorhandler()">
+    </script>
+
 
 </body>
 
