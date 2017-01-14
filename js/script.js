@@ -8,8 +8,6 @@ function nonce_generate() {
 
 
 function getYelpReviewsFromYelp(place, city) {
-    //console.log("place received in this function is" + place.name);
-    //console.log("city received in this function is" + city);
     var yelp_url = 'https://api.yelp.com/v2/search?'
     var YELP_KEY_SECRET = 'rML1MhFwm6phKTKPrwpSbnZ8fss';
     var YELP_TOKEN_SECRET = 'ej_V-eaYPaAfXblnM9OshO8erRE';
@@ -23,7 +21,7 @@ function getYelpReviewsFromYelp(place, city) {
         oauth_version: '1.0',
         callback: 'cb',
         term: place.name,
-        //location: city
+        location: city
     };
 
     var encodedSignature = oauthSignature.generate('GET', yelp_url, parameters, YELP_KEY_SECRET, YELP_TOKEN_SECRET);
@@ -37,13 +35,15 @@ function getYelpReviewsFromYelp(place, city) {
         dataType: 'jsonp',
         success: function(results) {
 
-            //console.log(results)
-
         },
         error: function() {
             alert("There was a problem obtaining Yelp review for the location specified");
         }
     };
-    var resultFromAjaxRequest = $.ajax(settings);
+    var resultFromAjaxRequest = $.ajax(settings).done(function(results){
+        console.log("ajax response is" + results)
+    }).fail(function(error){
+        console.log("ajax error is" + error)
+    });
     return resultFromAjaxRequest;
 }
