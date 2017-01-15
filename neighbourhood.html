@@ -11,8 +11,8 @@
 <body>
     <script type='text/javascript' src="knockout/dist/knockout.js"></script>
     </br>
-    <div id="location"></div>
-    </br>
+    <div data-bind="text: Location"></div>
+    <br>
     <input type="text" id="filter" placeholder="Filter Place" data-bind="textInput: item_to_be_filtered">
 
     <ul id="ul" class="collection" data-bind="foreach: filtered_items">
@@ -45,19 +45,35 @@
         var markerInfoWindow;
         var address;
         var yelp_review_for_business;
+        var filterItem;
+        var Location;
 
         var ViewModel = function() {
+            Location = ko.observable('Lodgings in ' + address);
             placesArray = ko.observableArray();
             item_to_be_filtered = ko.observable('');
             this.filtered_items = ko.computed(function() {
-                var filterItem = item_to_be_filtered().toLowerCase();
+                //var filterItem = item_to_be_filtered().toLowerCase();
+                filterItem = item_to_be_filtered().toLowerCase();
                 return result_filtered = ko.utils.arrayFilter(placesArray(), function(place) {
                     var title = place.name.toLowerCase()
                     var match = title.indexOf(filterItem) > -1;
+                    /*diplay markers for only filtered items
+                    if filterItem = '', display all markers*/
+
+                    if(filterItem == ''){
+                        console.log("filterItem is empty");
+                        for (var i =0; i<markerList.length; i++){
+                             markerList[i].setVisible(true);
+                                    console.log("visibility of marker.visible is" + markerList[i].visible);
+                        }
+                    }
+
                     for (var i = 0; i < placesArray().length; i++) {
                         for (var j = 0; j < result_filtered.length; j++) {
                             if (placesArray()[i] != result_filtered[j]) {
                                 markerList[i].setVisible(false);
+                               // markerList[i].setVisible(true);
                             } else {
                                 markerList[i].setVisible(true);
                             }
@@ -75,6 +91,7 @@
         }
 
         function getYelpReviewsAndPopulateInfo(place) {
+            console.log("I am in getYelpReviewsAndPopulateInfo")
             var business_review = "";
             getYelpReviewsFromYelp(place, address).done(function(result) {
                 var businesses_for_place = result.businesses;
@@ -106,7 +123,9 @@
         function initMap() {
            // console.log("status received is" + res)
             address = 'Kitsilano';
-            $("#location").append("Lodgings in" + " " + address);
+            //Location = address;
+            //$("#location").append("Lodgings in" + " " + address);
+
             map_lat_lng = new google.maps.LatLng(-34.397, 150.644);
             geocoder = new google.maps.Geocoder();
             map = new google.maps.Map(document.getElementById('map'), {
@@ -131,6 +150,8 @@
 
             viewModel = new ViewModel();
             ko.applyBindings(viewModel);
+
+
         }
 
         function determinePlaceForMarker(marker) {
@@ -155,12 +176,11 @@
                 placesArray(results);
                 returnedPlaces = results;
                 for (var i = 0; i < results.length; i++) {
-                    addMarker(results[i]);
+                    //addMarker(results[i]);
+                    addMarker(results[i], 0);
                 }
 
                 markerList.forEach(function(marker) {
-
-
                     marker.addListener('click', function() {
                         var markerLocation = determinePlaceForMarker(marker);
                         getYelpReviewsAndPopulateInfo(markerLocation);
@@ -175,25 +195,47 @@
                         toggleBounce(marker);
         }
 
-        function addMarker(place) {
+        function addMarker(place, timeout) {
+            /*
+             window.setTimeout(function() {
+          markers.push(new google.maps.Marker({
+            position: position,
+            map: map,
+            animation: google.maps.Animation.DROP
+          }));
+        }, timeout);
             var marker = new google.maps.Marker({
                 map: map,
                 animation: google.maps.Animation.DROP,
                 position: place.geometry.location
             });
             markerList.push(marker);
+            */
+            //window.setTimeout(function() {
+          markerList.push(new google.maps.Marker({
+            map: map,
+                animation: google.maps.Animation.DROP,
+                position: place.geometry.location
+          }));
+      //  }, timeout);
+            console.log("markerList.length is" + markerList.length);
+
+            markerList.forEach(function(marker){
+                console.log("marker in markerList is" + marker);
+            })
+
         }
 
         function toggleBounce(marker) {
-            if (marker.getAnimation() !== null) {
-                marker.setAnimation(null);
-            } else {
+            //if (marker.getAnimation() !== null) {
+               // marker.setAnimation(null);
+           // } else {
                 marker.setAnimation(google.maps.Animation.BOUNCE);
-            }
+           // }
         }
 
         function mapserrorhandler(){
-          alert("An error has occurred while using Google maps")
+          alert("An error has occurred while using Google maps");
         }
 
         function geocodeAddress(address, geocoder, resultsMap, callback) {
