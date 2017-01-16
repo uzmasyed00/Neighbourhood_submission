@@ -69,7 +69,8 @@
                         }
                     }
 
-                    for (var i = 0; i < placesArray().length; i++) {
+                    else{
+                        for (var i = 0; i < placesArray().length; i++) {
                         for (var j = 0; j < result_filtered.length; j++) {
                             if (placesArray()[i] != result_filtered[j]) {
                                 markerList[i].setVisible(false);
@@ -78,6 +79,7 @@
                                 markerList[i].setVisible(true);
                             }
                         }
+                    }
                     }
                     return match;
                 });
@@ -119,13 +121,8 @@
 
         }
 
-
         function initMap() {
-           // console.log("status received is" + res)
             address = 'Kitsilano';
-            //Location = address;
-            //$("#location").append("Lodgings in" + " " + address);
-
             map_lat_lng = new google.maps.LatLng(-34.397, 150.644);
             geocoder = new google.maps.Geocoder();
             map = new google.maps.Map(document.getElementById('map'), {
@@ -133,9 +130,7 @@
                 center: map_lat_lng,
                 zoom: 8
             });
-
             //geocode kistilano, vancouver. Once geocoded, the callback finds hotels in nearby radius by sending aysnc request to placesService
-
             geocodedAddress = geocodeAddress(address, geocoder, map, function(error, res) {
                 geocodedAddress = res
                 var request = {
@@ -196,42 +191,27 @@
         }
 
         function addMarker(place, timeout) {
-            /*
-             window.setTimeout(function() {
-          markers.push(new google.maps.Marker({
-            position: position,
-            map: map,
-            animation: google.maps.Animation.DROP
-          }));
-        }, timeout);
-            var marker = new google.maps.Marker({
-                map: map,
-                animation: google.maps.Animation.DROP,
-                position: place.geometry.location
-            });
-            markerList.push(marker);
-            */
-            //window.setTimeout(function() {
           markerList.push(new google.maps.Marker({
             map: map,
                 animation: google.maps.Animation.DROP,
                 position: place.geometry.location
           }));
-      //  }, timeout);
             console.log("markerList.length is" + markerList.length);
 
             markerList.forEach(function(marker){
                 console.log("marker in markerList is" + marker);
-            })
-
+            });
         }
 
         function toggleBounce(marker) {
-            //if (marker.getAnimation() !== null) {
-               // marker.setAnimation(null);
-           // } else {
-                marker.setAnimation(google.maps.Animation.BOUNCE);
-           // }
+            if (marker.getAnimation() !== null) {
+                    marker.setAnimation(null);
+                } else {
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(function() {
+                        marker.setAnimation(null);
+                    }, 1400);
+                }
         }
 
         function mapserrorhandler(){
